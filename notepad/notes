@@ -1,0 +1,29 @@
+npm init - y
+npm i express
+
+1.set parsers for form
+	app.use(express.json());
+	app.use(express.urlencoded({extended:true}));
+
+2.set ejs fro ejs page
+	app.set('view engine','ejs');
+	- allow you to generate html with plain javascript <%= 2+2 %>  ans -> 4
+
+3.set public static files
+	const path = require('path');
+	app.use(express.static(path.join(__dirname,'public')));
+
+	- here __dirname can give current path of your pc path and join with public
+	- must declare path 
+
+4.set dynamic routing
+	app.get('/profile/:username',function(req,res){ 
+    res.send(`welcome,${req.params.username}`);
+	})
+	app.get('/author/:username/:age',function(req,res){ 
+    res.send(`welcome,${req.params.username} of age ${req.params.age}`);
+	})
+
+	- if you have a fix path like localhost:/3000/profile/dhruvi,localhost:/3000/profile/Isha so on.. that time dynamic routing use
+	- use : and give name it's call variable after : (: can be work - req.params.username,age with the help of  : no need to write full format)
+	
