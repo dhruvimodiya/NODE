@@ -24,9 +24,35 @@ app.get('/file/:filename', function (req, res) {
         res.render('show',{filename:req.params.filename ,filedata:filedata})        
     })
 });
+
+// edit file name
+app.get('/edit/:filename', function (req, res) {
+   res.render('edit',{filename : req.params.filename})
+});
+
+app.post('/edit', function (req, res) {
+   console.log("edit - ",req.body);
+   fs.rename(`./files/${req.body.previous}`,`./files/${req.body.new}.txt`,function (err) {
+    res.redirect("/");
+   }); 
+});
+
+app.post('/delete', function (req, res) {
+    console.log("delete - ",req.body.filename);
+    const filepath = `./files/${req.body.filename}`;
+    fs.unlink(filepath,function(err){
+        if(err){
+            console.error("error -",err);
+            return res.status(500).send("error deleting file");   
+        }
+        res.redirect("/");
+    })
+});
+
+
 // create the file
 app.post('/create', function (req, res) {
-    console.log(req.body);
+    console.log("create - ",req.body);
     const filename = `${req.body.title.split(' ').join('')}.txt`;
     fs.writeFile(`./files/${filename}`, req.body.details, function (err) {
         if (err) {

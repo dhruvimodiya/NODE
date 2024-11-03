@@ -10,7 +10,7 @@
     <div class="main w-full min-h-screen bg-zinc-900">
         <div class="form p-10">
             <form action="/create" method="post">
-                <input class="block px-5 w-full outline-none text-white rounded-md py-2 bg-zinc-800" name="title" type="text" placeholder="Title goes..">
+                <input class="block px-5 w-full outline-none text-white rounded-md py-2 bg-zinc-800" maxlength="15" name="title" type="text" placeholder="Title goes..">
                 <textarea class="block mt-2 px-5 w-full outline-none text-white rounded-md py-2 resize-none bg-zinc-800" name="details" placeholder="Write your task details here"></textarea>
                 <input class="mt-2 bg-blue-600 px-5 py-2 rounded-md text-white cursor-pointer" type="submit" value="Create Task">
             </form>
@@ -18,15 +18,31 @@
         <div class="task p-10 flex gap-3 flex-wrap">
             <% if(files.length > 0) { %>
                 <% files.forEach(function(val) { %>
-                    <div class="w-72 px-3 py-4 rounded-md bg-zinc-800">
+                    <div class="w-72 px-3 py-4 rounded-md bg-zinc-800 relative">
+                        <!-- Delete icon in top-right corner -->
+                        <form action="/delete" method="POST" class="absolute top-2 right-2">
+                            <input type="hidden" name="filename" value="<%= val %>">
+                            <button type="submit" class="text-red-500 hover:text-red-700">
+                                <!-- Font Awesome Trash Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8 4a1 1 0 011-1h2a1 1 0 011 1v1h5a1 1 0 110 2h-1v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7H3a1 1 0 110-2h5V4zm2 0H9v1h2V4zm-3 6a1 1 0 012 0v4a1 1 0 11-2 0v-4zm4 0a1 1 0 112 0v4a1 1 0 11-2 0v-4z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </form>
+                        <!-- task title -->
                         <h1 class="text-white text-3xl tracking-tighter"><%= val %></h1>
-                        <a href="/file/<%= val %>" class="text-blue-500 inline-block mt-3">Read more</a>
+                        <!-- task action -->
+                        <div class="flex mt-3 w-full justify-between items-center">
+                            <a href="/file/<%= val %>" class="text-blue-500 inline-block">Read more</a>
+                            <a href="/edit/<%= val %>" class="text-zinc-600">edit</a>
+                        </div>
                     </div>
                 <% }) %>
             <% } else { %>
                 <h3 class="text-zinc-600">No task yet</h3>
             <% } %>
         </div>
+        
     </div>
 </body>
 </html>
