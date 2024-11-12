@@ -33,12 +33,37 @@ app.post("/create", function (req, res) {
 
       let token = jwt.sign({email},"shhhhh");
       res.cookie("token",token);
-      res.send(createUser);
+      res.redirect("login");
     });
   });
 });
 
+// login
+app.get('/login',function(req,res){
+  res.render("login")
+})
+app.get('/home',function(req,res){
+  res.render("home")
+})
+app.get('/error',function(req,res){
+  res.render("error")
+})
 
+app.post('/login',async function(req,res){
+  let user = await userModel.findOne({email:req.body.email});
+  if(!user) return res.send("somthing is wrong");
+
+  bcrypt.compare(req.body.password, user.password, function (err, result) {
+    console.log(result);
+    if (result) {
+      let token = jwt.sign({ email: user.email }, "shhhhh");
+      res.cookie("token", token);
+      res.redirect("home"); // Redirect to the home route
+    } else {
+      res.send("Something is wrong");
+    }
+  });
+})
 
 // logout
 app.get('/logout',function(req,res){
