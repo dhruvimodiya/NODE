@@ -6,6 +6,8 @@ function Login() {
     email: "",
     password: "",
   });
+  const [isLoading, setIsLoading] = useState(false);  // To manage loading state
+  const [error, setError] = useState(""); // To display error messages
 
   const handleChange = (e) => {
     setFormData({ ...FormData, [e.target.name]: e.target.value });
@@ -13,16 +15,20 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(FormData);
+    setIsLoading(true);
+    setError(""); // Reset error message before each submission
 
     try {
       const response = await axios.post("http://localhost:8000/login", FormData);
       alert("Login Successful");
       localStorage.setItem("token", response.data.token);
+      window.location.href = "/dashboard"; // Redirect to the dashboard after login
     } catch (error) {
       const errorMessage =
         error.response?.data?.error || "An unexpected error occurred. Please try again.";
-      alert(errorMessage);
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false); // Stop loading state after request
     }
   };
 
@@ -33,6 +39,9 @@ function Login() {
         className="bg-white p-8 rounded-lg shadow-lg w-full sm:w-96"
       >
         <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">Login</h2>
+
+        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+
         <div className="mb-4">
           <div className="relative">
             <span className="absolute left-3 top-3 text-gray-500">
@@ -50,6 +59,7 @@ function Login() {
             />
           </div>
         </div>
+
         <div className="mb-6">
           <div className="relative">
             <span className="absolute left-3 top-3 text-gray-500">
@@ -67,6 +77,7 @@ function Login() {
             />
           </div>
         </div>
+
         <div className="flex items-center justify-between mb-6">
           <label className="flex items-center">
             <input type="checkbox" className="mr-2" />
@@ -76,12 +87,15 @@ function Login() {
             Forgot password?
           </a>
         </div>
+
         <button
           type="submit"
           className="w-full py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          disabled={isLoading} // Disable the button while loading
         >
-          Login
+          {isLoading ? "Logging in..." : "Login"}
         </button>
+
         <div className="mt-6 text-center">
           <p className="text-sm">
             Don't have an account?{" "}

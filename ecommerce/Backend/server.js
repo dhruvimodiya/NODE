@@ -1,77 +1,120 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const User = require('./models/User');
-const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-require('dotenv').config(); // To use environment variables for sensitive data
+const multer = require('multer');
+const cors = require('cors');
+require('dotenv').config();
 
+// Initialize the app
 const app = express();
-const JWT_SECRET = process.env.JWT_SECRET || 'hello'; // Use an environment variable for production
+const JWT_SECRET = process.env.JWT_SECRET || 'hello'; // JWT secret (use .env in production)
 
 // Middleware
 app.use(cors());
-app.use(express.json()); // Middleware to parse JSON request bodies
+app.use(express.json()); // To parse JSON request bodies
+app.use('/uploads', express.static('uploads')); // Serve uploaded files statically
 
 // MongoDB connection
 mongoose.connect('mongodb://127.0.0.1:27017/ecommerce', { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('MongoDB connected'))
     .catch((err) => console.error('MongoDB connection error:', err));
 
-// Test route (Login route should be POST, not GET)
-app.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-
-    // Validate input
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
-    }
-
-    const user = await User.findOne({ email });
-    if (!user) {
-        return res.status(400).json({ error: 'Invalid user' });
-    }
-
-    // Check if the password matches
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-        return res.status(400).json({ error: 'Invalid password' });
-    }
-
-    // Generate JWT token
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
+// User Schema (Model)
+const UserSchema = new mongoose.Schema({
+    username: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    profileImage: { type: String },
 });
 
-// Registration route
-app.post('/register', async (req, res) => {
-    const { username, email, password } = req.body;
+const User = mongoose.model('User', UserSchema);
 
-    // Input validation
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/'); // Directory where files will be stored
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + '-' + file.originalname); // Generate unique filename
+    }
+});
+
+const upload = multer({
+    storage,
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!allowedTypes.includes(file.mimetype)) {
+            return cb(new Error('Only .jpeg, .jpg, and .png formats are allowed'));
+        }
+        cb(null, true);
+    }
+});
+
+// Registration Route (with image upload)
+app.post('/register', upload.single('profileImage'), async (req, res) => {
+    const { username, email, password } = req.body;
+    const profileImage = req.file ? req.file.filename : null;
+
     if (!username || !email || !password) {
         return res.status(400).json({ error: 'All fields are required' });
     }
 
     try {
-        // Check if the user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ error: 'Email already exists' });
         }
 
-        // Hash password and create new user
         const hashPassword = await bcrypt.hash(password, 10);
-        const user = new User({ username, email, password: hashPassword });
+        const user = new User({
+            username,
+            email,
+            password: hashPassword,
+            profileImage
+        });
+
         await user.save();
 
-        res.status(201).json({ message: 'User registered successfully' });
+        res.status(201).json({
+            message: 'User registered successfully',
+            user: { username, email, profileImage: `/uploads/${profileImage}` }
+        });
     } catch (error) {
         console.error('Registration error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// Start the server
+// Login Route (with JWT authentication)
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ error: 'Invalid email or password' });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(400).json({ error: 'Invalid email or password' });
+        }
+
+        const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1h' });
+        res.json({ message: 'Login successful', token });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Start server
 app.listen(8000, () => {
     console.log('Server running on http://localhost:8000');
 });
