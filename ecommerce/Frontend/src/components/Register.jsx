@@ -1,30 +1,76 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import axios from "axios";
 
 const Register = () => {
     const [previewImage, setPreviewImage] = useState(null);
+    const [email, setEmail] = useState("");
+    const [otp, setOtp] = useState("");
+    const [otpSent, setOtpSent] = useState(false);
+    const [otpVerified, setOtpVerified] = useState(false);
+    const [message, setMessage] = useState("");
 
     const handleImageChange = (event) => {
         const file = event.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = () => {
-                setPreviewImage(reader.result); // Set the image URL for preview
+                setPreviewImage(reader.result);
             };
             reader.readAsDataURL(file);
         }
     };
 
+    const sendOtp = () => {
+        axios.post("http://localhost:8000/send-otp", { email })
+            .then((response) => {
+                setMessage(response.data.message);
+                setOtpSent(true);
+            })
+            .catch((error) => {
+                setMessage("Failed to send OTP. Please try again.");
+                console.error(error);
+            });
+    };
+
+    const verifyOtp = () => {
+        fetch("http://localhost:8000/verify-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, otp }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                setOtpVerified(true);
+                setMessage("Email verified successfully!");
+            })
+            .catch((error) => {
+                setMessage("Invalid OTP. Please try again.");
+                console.error(error);
+            });
+    };
+
     const handleSubmit = (event) => {
         event.preventDefault();
+
+        if (!otpVerified) {
+            setMessage("Please verify your email before registering.");
+            return;
+        }
+
         const formData = new FormData(event.target);
-        // Submit form data to the backend
         fetch("http://localhost:8000/register", {
             method: "POST",
             body: formData,
         })
             .then((response) => response.json())
-            .then((data) => console.log(data))
-            .catch((error) => console.error(error));
+            .then((data) => {
+                setMessage("Registration successful!");
+            })
+            .catch((error) => {
+                setMessage("Registration failed. Please try again.");
+                console.error(error);
+            });
     };
 
     return (
@@ -37,38 +83,28 @@ const Register = () => {
                     Register
                 </h2>
 
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-600 mb-2">
-                        Profile Image
-                    </label>
-                    <input
-                        type="file"
-                        name="profileImage"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
-                    {previewImage && (
-                        <div className="mt-4 flex justify-center">
+                <div className="mb-4 flex justify-center">
+                    <div
+                        onClick={() => document.getElementById("fileInput").click()}
+                        className="w-24 h-24 rounded-full border-2 border-gray-300 flex items-center justify-center cursor-pointer"
+                    >
+                        {previewImage ? (
                             <img
                                 src={previewImage}
                                 alt="Profile Preview"
-                                className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
+                                className="w-full h-full rounded-full object-cover"
                             />
-                        </div>
-                    )}
-                </div>
-
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-600 mb-2">
-                        Username
-                    </label>
+                        ) : (
+                            <span className="text-gray-500">Upload Image</span>
+                        )}
+                    </div>
                     <input
-                        type="text"
-                        name="username"
-                        placeholder="Enter your username"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-                        required
+                        type="file"
+                        id="fileInput"
+                        name="profileImage"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
                     />
                 </div>
 
@@ -80,6 +116,52 @@ const Register = () => {
                         type="email"
                         name="email"
                         placeholder="Enter your email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-300"
+                        required
+                    />
+                    {!otpSent && (
+                        <button
+                            type="button"
+                            onClick={sendOtp}
+                            className="mt-2 py-1 px-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300"
+                        >
+                            Send OTP
+                        </button>
+                    )}
+                </div>
+
+                {otpSent && !otpVerified && (
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-600 mb-2">
+                            Enter OTP
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="Enter the OTP"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-300"
+                        />
+                        <button
+                            type="button"
+                            onClick={verifyOtp}
+                            className="mt-2 py-1 px-3 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-300"
+                        >
+                            Verify OTP
+                        </button>
+                    </div>
+                )}
+
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-600 mb-2">
+                        Username
+                    </label>
+                    <input
+                        type="text"
+                        name="username"
+                        placeholder="Enter your username"
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-300"
                         required
                     />
@@ -101,9 +183,21 @@ const Register = () => {
                 <button
                     type="submit"
                     className="w-full py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300"
+                    disabled={!otpVerified}
                 >
                     Register
                 </button>
+
+                <div className="mt-4 text-center">
+                    <p className="text-sm text-gray-600">
+                        Already have an account?{" "}
+                        <Link to="/" className="text-blue-500 hover:text-blue-600">
+                            Login here
+                        </Link>
+                    </p>
+                </div>
+
+                {message && <p className="mt-4 text-center text-red-500">{message}</p>}
             </form>
         </div>
     );

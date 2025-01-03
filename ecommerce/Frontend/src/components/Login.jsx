@@ -22,7 +22,7 @@ function Login() {
       const response = await axios.post("http://localhost:8000/login", FormData);
       alert("Login Successful");
       localStorage.setItem("token", response.data.token);
-      window.location.href = "/dashboard"; // Redirect to the dashboard after login
+      window.location.href = "/home"; // Redirect to the dashboard after login
     } catch (error) {
       const errorMessage =
         error.response?.data?.error || "An unexpected error occurred. Please try again.";
