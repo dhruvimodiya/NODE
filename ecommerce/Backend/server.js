@@ -1,66 +1,91 @@
+require('dotenv').config(); // Load environment variables
+
 const express = require('express');
+const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const User = require('./models/User');
+const otpGenerator = require('otp-generator');
+const nodemailer = require('nodemailer');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-require('dotenv').config();
 
 const app = express();
-const JWT_SECRET = process.env.JWT_SECRET || 'hello';
+const PORT = process.env.PORT || 3000;
 
+app.use(bodyParser.json());
 app.use(cors());
-app.use(express.json());
 
-mongoose.connect('mongodb://127.0.0.1:27017/ecommerce', { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('MongoDB connected'))
-    .catch((err) => console.error('MongoDB connection error:', err));
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
-app.post('/login', async (req, res) => {
-    const { email, password } = req.body;
+const db = mongoose.connection;
 
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
-    }
-
-    const user = await User.findOne({ email });
-    if (!user) {
-        return res.status(400).json({ error: 'Invalid user' });
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-        return res.status(400).json({ error: 'Invalid password' });
-    }
-
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
+db.on('error', (err) => {
+    console.error('MongoDB connection error:', err);
 });
 
-app.post('/register', async (req, res) => {
-    const { username, email, password } = req.body;
+db.once('open', () => {
+    console.log('Connected to MongoDB');
+});
 
-    if (!username || !email || !password) {
-        return res.status(400).json({ error: 'All fields are required' });
-    }
+// Define schema and model for OTP
+const otpSchema = new mongoose.Schema({
+    email: { type: String, required: true },
+    otp: { type: String, required: true },
+    createdAt: { type: Date, expires: '5m', default: Date.now }
+});
+
+const OTP = mongoose.model('OTP', otpSchema);
+
+// Generate OTP and send email
+app.post('/generate-otp', async (req, res) => {
+    const { email } = req.body;
+
+    const otp = otpGenerator.generate(6, { digits: true, alphabets: false, upperCase: false, specialChars: false });
 
     try {
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ error: 'Email already exists' });
-        }
+        await OTP.create({ email, otp });
 
-        const hashPassword = await bcrypt.hash(password, 10);
-        const user = new User({ username, email, password: hashPassword });
-        await user.save();
+        // Send OTP via email
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER, // Use environment variable
+                pass: process.env.EMAIL_PASS  // Use environment variable
+            }
+        });
 
-        res.status(201).json({ message: 'User registered successfully' });
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'OTP Verification',
+            text: `Your OTP for verification is: ${otp}`
+        });
+
+        res.status(200).send('OTP sent successfully');
     } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error(error);
+        res.status(500).send('Error sending OTP');
     }
 });
 
-app.listen(8000, () => {
-    console.log('Server running on http://localhost:8000');
+// Verify OTP
+app.post('/verify-otp', async (req, res) => {
+    const { email, otp } = req.body;
+
+    try {
+        const otpRecord = await OTP.findOne({ email, otp }).exec();
+
+        if (otpRecord) {
+            res.status(200).send('OTP verified successfully');
+            await OTP.deleteOne({ email, otp }); // Optionally delete the OTP after verification
+        } else {
+            res.status(400).send('Invalid OTP');
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error verifying OTP');
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
