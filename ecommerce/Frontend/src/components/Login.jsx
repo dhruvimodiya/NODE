@@ -1,5 +1,6 @@
 import axios from "axios";
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
   const [FormData, setFormData] = useState({
@@ -8,6 +9,7 @@ function Login() {
   });
   const [isLoading, setIsLoading] = useState(false);  // To manage loading state
   const [error, setError] = useState(""); // To display error messages
+  const navigate = useNavigate(); // Hook for navigation
 
   const handleChange = (e) => {
     setFormData({ ...FormData, [e.target.name]: e.target.value });
@@ -22,7 +24,7 @@ function Login() {
       const response = await axios.post("http://localhost:8000/login", FormData);
       alert("Login Successful");
       localStorage.setItem("token", response.data.token);
-      window.location.href = "/home"; // Redirect to the dashboard after login
+      navigate("/home"); // Redirect to Home component
     } catch (error) {
       const errorMessage =
         error.response?.data?.error || "An unexpected error occurred. Please try again.";

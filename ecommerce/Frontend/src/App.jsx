@@ -2,7 +2,9 @@ import './App.css'
 import { BrowserRouter,Routes,Route } from 'react-router-dom'
 import Login from './components/Login'
 import Register from './components/Register'
-import OtpVerification from './components/OtpVerification'
+import Home from './components/Home'
+import AdminLogin from './components/admin/AdminLogin'
+import CreateProduct from './components/admin/CreateProduct'
 
 function App() {
 
@@ -12,7 +14,9 @@ function App() {
       <Routes>
         <Route path='/' element={<Login/>}/>
         <Route path='/register' element={<Register/>}/>
-        <Route path='/otp-verification' element={<OtpVerification/>}/>
+        <Route path='/home' element={<Home/>}/>
+        <Route path='/admin' element={<AdminLogin/>}/>
+        <Route path='/admin/create-product' element={<CreateProduct />} />
       </Routes>
      </BrowserRouter>
     </>
