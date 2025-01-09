@@ -7,14 +7,41 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
+const session = require('express-session');
 require('dotenv').config();
 
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'hello';
 
-app.use(cors());
 app.use(express.json());
+app.use(session({
+    secret: 'your_secret_key', // A secret key used to sign the session ID cookie
+    resave: false, // Forces the session to be saved back to the session store
+    saveUninitialized: false, // Forces a session that is "uninitialized" to be saved to the store
+    cookie: {
+      maxAge: 2 * 60 * 1000, // 2min
+      sameSite: "lax",// lax,none,s
+      secure: false, // true
+      httpOnly: true,
+    }
+  }));
+app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow requests from any origin
+        callback(null, true);
+      },
+      methods: ['GET', 'POST', 'PUT', 'DELETE'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true, // Allow sending cookies with the request
+    })
+  );
 
+
+
+app.set('trust proxy', 1); // Trust the first proxy
+
+  
 mongoose.connect('mongodb://127.0.0.1:27017/ecommerce', { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('MongoDB connected'))
     .catch((err) => console.error('MongoDB connection error:', err));
@@ -29,6 +56,17 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
+app.get('/check-session', (req, res) => {
+    if (req.session.user) {
+      // If the session is set, return session info
+      res.json({ session: true });
+    } else {
+      // If the session is not set, return no session
+      res.json({ session: false });
+    }
+  });
+  
 
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -48,7 +86,9 @@ app.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
+
+    req.session.user = { id: user._id, email: user.email }; // Save user session
+    res.json({ token, message: 'Login Successful' });
 });
 
 app.post('/register', async (req, res) => {
@@ -74,6 +114,16 @@ app.post('/register', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+app.post('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ error: 'Unable to log out' });
+        }
+        res.json({ message: 'Logout Successful' });
+    });
+});
+
 
 app.post('/admin', async (req, res) => {
     const { email, password } = req.body;
