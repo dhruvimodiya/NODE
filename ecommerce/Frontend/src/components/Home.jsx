@@ -1,6 +1,30 @@
-import React from 'react';
+import axios from 'axios';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
+
+    const navigate = useNavigate();
+    
+    useEffect(()=>{
+        const checkSession = async()=>{
+            try {
+                const response = await axios.get('http://localhost:8000/check-session',{
+                    withCredentials :true,
+                });
+                if(response.data.session){
+                    console.log('session found,displaying home page');
+                }else{
+                    navigate('/login');
+                }
+            } catch (error) {
+                console.error('error checking session',error)
+                navigate('/login');
+            }
+        }
+        checkSession();
+    },[navigate])
+
     const products = [
         { id: 1, name: 'Product 1', price: '$10' },
         { id: 2, name: 'Product 2', price: '$20' },

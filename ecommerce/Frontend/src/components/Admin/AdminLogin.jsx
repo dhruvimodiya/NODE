@@ -21,10 +21,10 @@ function AdminLogin() {
         setError("");
 
         try {
-            const response = await axios.post("http://localhost:8000/admin/login", FormData);
+            const response = await axios.post("http://localhost:8000/admin", FormData);
             alert("Admin Login Successful");
             localStorage.setItem("adminToken", response.data.token);
-            navigate("/admin/home"); // Redirect to admin home
+            navigate("/admin/create-product"); // Redirect to admin home
         } catch (error) {
             const errorMessage =
                 error.response?.data?.error || "An unexpected error occurred. Please try again.";

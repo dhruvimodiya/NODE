@@ -21,18 +21,19 @@ function Login() {
     setError(""); // Reset error message before each submission
 
     try {
-      const response = await axios.post("http://localhost:8000/login", FormData);
-      alert("Login Successful");
-      localStorage.setItem("token", response.data.token);
-      navigate("/home"); // Redirect to Home component
+        const response = await axios.post("http://localhost:8000/login", FormData, { withCredentials: true });
+        alert(response.data.message || "Login Successful"); // Display server message
+        localStorage.setItem("token", response.data.token);
+        navigate("/home"); // Redirect to Home component
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.error || "An unexpected error occurred. Please try again.";
-      setError(errorMessage);
+        const errorMessage =
+            error.response?.data?.error || "An unexpected error occurred. Please try again.";
+        setError(errorMessage);
     } finally {
-      setIsLoading(false); // Stop loading state after request
+        setIsLoading(false); // Stop loading state after request
     }
-  };
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center">
