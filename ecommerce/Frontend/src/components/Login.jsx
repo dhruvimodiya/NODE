@@ -7,7 +7,7 @@ function Login() {
     email: "",
     password: "",
   });
-  const [isLoading, setIsLoading] = useState(false);  // To manage loading state
+  const [isLoading, setIsLoading] = useState(false); // To manage loading state
   const [error, setError] = useState(""); // To display error messages
   const navigate = useNavigate(); // Hook for navigation
 
@@ -21,19 +21,28 @@ function Login() {
     setError(""); // Reset error message before each submission
 
     try {
-        const response = await axios.post("http://localhost:8000/login", FormData, { withCredentials: true });
-        alert(response.data.message || "Login Successful"); // Display server message
-        localStorage.setItem("token", response.data.token);
-        navigate("/home"); // Redirect to Home component
-    } catch (error) {
-        const errorMessage =
-            error.response?.data?.error || "An unexpected error occurred. Please try again.";
-        setError(errorMessage);
-    } finally {
-        setIsLoading(false); // Stop loading state after request
-    }
-};
+      const response = await axios.post(
+        "http://localhost:8000/login",
+        FormData,
+        { withCredentials: true } // Include credentials (cookies)
+      );
 
+      // Save token and username in localStorage
+      const { token, username } = response.data;
+      localStorage.setItem("token", token);
+      localStorage.setItem("username", username);
+
+      alert(response.data.message || "Login Successful"); // Display server message
+      navigate("/home"); // Redirect to Home component
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error ||
+        "An unexpected error occurred. Please try again.";
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false); // Stop loading state after request
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -41,7 +50,9 @@ function Login() {
         onSubmit={handleSubmit}
         className="bg-white p-8 rounded-lg shadow-lg w-full sm:w-96"
       >
-        <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">Login</h2>
+        <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
+          Login
+        </h2>
 
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 

@@ -1,12 +1,17 @@
 import axios from 'axios';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
 
     const navigate = useNavigate();
+    const [username ,setUsername] = useState('');
     
     useEffect(()=>{
+        const storeUsername = localStorage.getItem('username');
+        setUsername(storeUsername || 'Guest');
+
+
         const checkSession = async()=>{
             try {
                 const response = await axios.get('http://localhost:8000/check-session',{
@@ -15,11 +20,11 @@ const Home = () => {
                 if(response.data.session){
                     console.log('session found,displaying home page');
                 }else{
-                    navigate('/login');
+                    navigate('/');
                 }
             } catch (error) {
                 console.error('error checking session',error)
-                navigate('/login');
+                navigate('/');
             }
         }
         checkSession();
@@ -34,6 +39,7 @@ const Home = () => {
 
     return (
         <div className="container mx-auto p-4">
+            <h1 className="text-2xl font-bold mb-4">Welcome , {username} !</h1>
             <h1 className="text-2xl font-bold mb-4">Available Products</h1>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {products.map(product => (
