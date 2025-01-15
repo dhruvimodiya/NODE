@@ -18,7 +18,6 @@ const Register = () => {
   const [otpDisabled, setOtpDisabled] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [showOtpSection, setShowOtpSection] = useState(true);
-  const navigate = useNavigate();  // Hook for navigation
 
   const isValidEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,7 +68,6 @@ const Register = () => {
     setTimeout(() => setOtpDisabled(false), 120000); // Re-enable after 2 minutes
 
     const newOtp = Math.floor(100000 + Math.random() * 900000);
-    // const newOtp = 123456;
     setGeneratedOtp(newOtp);
     setIsOtpValid(true);
     startOtpTimer();
@@ -103,7 +101,7 @@ const Register = () => {
 
     if (otp.trim() === generatedOtp.toString()) {
       console.log("OTP verified successfully!");
-      setIsOtpValid(true);
+      setIsOtpValid(false);
       setGeneratedOtp(null); // Clear OTP after successful verification
       setOtp(""); // Clear the input field after successful verification
       setOtpVerified(true);
@@ -115,12 +113,10 @@ const Register = () => {
   };
 
   const handleSubmit = async (event) => {
-    console.log("dgdggdvvd:")
     event.preventDefault();
-    console.log("otp:::",isOtpValid)
-
+  
     if (!isOtpValid) {
-      alert("Please verify your OTP before submitting.");
+      toast.error("Please verify your OTP before submitting.");
       return;
     }
   
@@ -129,8 +125,8 @@ const Register = () => {
       email,
       password,
     };
-    console.log("formData:",formData)
   
+    const navigate = useNavigate();  // Hook for navigation
   
     try {
       const response = await axios.post("http://localhost:8000/register", formData);
@@ -140,13 +136,12 @@ const Register = () => {
   
       if (response.status === 200) {
         toast.success("Registration successful!");
-        // Redirect to the home page
-        navigate("/");  // Redirect to Home page (you can replace "/" with the appropriate path)
         setUsername("");
         setEmail("");
         setPassword("");
-        console.log("end:")
         
+        // Redirect to the home page
+        navigate("/");  // Redirect to Home page (you can replace "/" with the appropriate path)
       } else {
         // Handle unexpected status code
         toast.error("Registration failed. Please try again.");

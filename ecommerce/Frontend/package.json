@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "awesome-qr": "^2.1.5-rc.0",
     "axios": "^1.7.9",
     "html2canvas": "^1.4.1",
