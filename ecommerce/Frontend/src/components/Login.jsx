@@ -29,11 +29,11 @@ function Login() {
 
       // Save token and username in localStorage
       const { token, username } = response.data;
-      localStorage.setItem("token", token);
+      localStorage.setItem("token", token); 
       localStorage.setItem("username", username);
 
       alert(response.data.message || "Login Successful"); // Display server message
-      navigate("/home"); // Redirect to Home component
+      navigate("/"); // Redirect to Home component
     } catch (error) {
       const errorMessage =
         error.response?.data?.error ||
